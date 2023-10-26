@@ -27,6 +27,8 @@ function App() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [infoModal, setInfoModal] = useState(null);
   const [nowDate, setNowDate] = useState("");
+  const [showNumber, setShowNumber] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState(new Set([]))
   const [params, setParams] = useState({
     nombreCliente: "",
     tiempoActual: null,
@@ -65,7 +67,7 @@ function App() {
 
         if (jsonData) {
           const uniqueClientData = {}; // Objeto para almacenar los datos únicos de clientes
-
+          console.log(jsonData);
           jsonData.forEach((record) => {
             const nombreCliente = record.NombreCliente;
             if (!uniqueClientData[nombreCliente]) {
@@ -121,6 +123,7 @@ function App() {
   }
   useEffect(() => {
     if (data && selectedValue) {
+      console.log(data);
       setSendParams((prevData) => ({
         ...prevData,
         nombreCliente: selectedValue,
@@ -132,12 +135,7 @@ function App() {
         filterData.map((item) => {
           setParams((prevParams) => ({
             ...prevParams,
-            nombreCliente: item.NombreCliente,
-            tiempoActual: nowDate,
             numero: item.Numero,
-            fecha: item.Fechas,
-            saldoPendiente: item.SaldoPendiente,
-            fechaVencida: item.DiasVencimiento,
           }));
         });
       }
@@ -145,10 +143,7 @@ function App() {
     }
   }, [selectedValue]);
 
-  useEffect(() => {
-    console.log(sendParams);
-  }, [sendParams]);
-
+  
   function getNowDate() {
     let fechaActualUTC = new Date();
     fechaActualUTC.setHours(fechaActualUTC.getHours() - 5);
@@ -177,6 +172,24 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if(data && sendParams.numero){
+      console.log(sendParams.numero.values().next().value.toString());
+      const filterDataNumber = data.find(item => item.Numero.includes(sendParams.numero.values().next().value.toString()));
+      console.log(filterDataNumber);
+      if(filterDataNumber){
+        setParams({
+          nombreCliente: filterDataNumber.NombreCliente,
+          numero: filterDataNumber.Numero,
+          tiempoActual: nowDate,
+          fecha: filterDataNumber.Fechas,
+          saldoPendiente: filterDataNumber.SaldoPendiente,
+          fechaVencida: filterDataNumber.DiasVencimiento,
+        });
+      }
+    }
+  }, [sendParams.numero])
+
   return (
     <div
       className="relative flex justify-center align-middle"
@@ -189,8 +202,8 @@ function App() {
           muted
           loop
           playsInline
-          className="absolute t-0 l-0 w-100 h-100"
-          style={{ objectFit: "cover", zIndex: "-1" }}
+          className="absolute t-0 l-0 w-100"
+          style={{ objectFit: "cover", zIndex: "-1", height: "100%" }}
         />
       ) : (
         <img
@@ -223,30 +236,58 @@ function App() {
             className={showClient === true ? "showClient" : "notShowClient"}
             style={{ backgroundColor: "#CACFD2", margin: "10px" }}
           >
-            <Select
-              isRequired
-              color="primary"
-              label="Cliente"
-              placeholder="Seleccionar un cliente"
-              className="w-full py-2"
-              selectedKeys={selectedValue}
-              onSelectionChange={setSelectedValue}
-            >
-              {data &&
-                data.map((item, index) =>
-                  item.NombreCliente.map((nombre, index) => (
+            <div>
+              <Select
+                isRequired
+                color="primary"
+                label="Cliente"
+                placeholder="Seleccionar un cliente"
+                className="w-full py-2"
+                selectedKeys={selectedValue}
+                onSelectionChange={setSelectedValue}
+              >
+                {data &&
+                  data.map((item, index) =>
+                    item.NombreCliente.map((nombre, index) => (
+                      <SelectItem
+                        key={nombre}
+                        value={nombre}
+                        className="text-black"
+                        onClick={() => setShowNumber(true)}
+                      >
+                        {nombre}
+                      </SelectItem>
+                    ))
+                  )}
+              </Select>
+            </div>
+            <div className={showNumber === true ? "showNumber" : "notShowNumber"}>
+              <Select
+                isRequired
+                color="primary"
+                label="Numero de factura"
+                placeholder="Seleccionar numero"
+                className="w-full py-2"
+                selectedKeys={sendParams.numero}
+                onSelectionChange={(newSelection) =>
+                  setSendParams({ ...sendParams, numero: newSelection })
+                }
+              >
+                {params.numero &&
+                  params.numero.map((numero, index) => (
                     <SelectItem
-                      key={nombre}
-                      value={nombre}
+                      key={numero}
+                      value={numero}
                       className="text-black"
                       onClick={() => setShowForm(true)}
                     >
-                      {nombre}
+                      {numero}
                     </SelectItem>
-                  ))
-                )}
-            </Select>
+                  ))}
+              </Select>
+            </div>
           </div>
+
           <div
             className={showForm === true ? "showForm" : "notShowForm"}
             style={{ backgroundColor: "#CACFD2", margin: "10px" }}
@@ -263,30 +304,6 @@ function App() {
                     setSendParams({ ...sendParams, fecha: newSelection })
                   }
                 />
-              </div>
-              <div>
-                <Select
-                  isRequired
-                  color="primary"
-                  label="Numero"
-                  placeholder="Seleccionar numero"
-                  className="w-full py-2"
-                  selectedKeys={sendParams.numero}
-                  onSelectionChange={(newSelection) =>
-                    setSendParams({ ...sendParams, numero: newSelection })
-                  }
-                >
-                  {params.numero &&
-                    params.numero.map((numero, index) => (
-                      <SelectItem
-                        key={numero}
-                        value={numero}
-                        className="text-black"
-                      >
-                        {numero}
-                      </SelectItem>
-                    ))}
-                </Select>
               </div>
               <div>
                 <Select
@@ -321,7 +338,10 @@ function App() {
                   className="w-full py-2"
                   selectedValue={sendParams.saldoPendiente}
                   onSelectionChange={(newSelection) =>
-                    setSendParams({ ...sendParams, saldoPendiente: newSelection })
+                    setSendParams({
+                      ...sendParams,
+                      saldoPendiente: newSelection,
+                    })
                   }
                 >
                   {params.saldoPendiente &&

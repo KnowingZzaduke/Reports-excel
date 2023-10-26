@@ -36,6 +36,24 @@ input[type="number"] {
   overflow: hidden;
 }
 
+.notShowNumber{
+  display: "flex";
+  flex-direction: column;
+  height: 0%;
+  transition: .25s ease;
+  overflow: hidden;
+  padding: 0%;
+  position: absolute;
+}
+
+.showNumber{
+  display: "flex";
+  flex-direction: column;
+  min-height: 88px;
+  transition: .25s ease;
+  overflow: hidden;
+}
+
 .notShowForm{
   display: "flex";
   flex-direction: column;

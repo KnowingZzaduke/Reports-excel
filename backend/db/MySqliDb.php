@@ -14,7 +14,7 @@
  * @version   2.9.3
  */
 
- $db = new MysqliDb("192.185.4.144","diasam_admin","Dysam2022","diasam_cobros");
+ $db = new MysqliDb("localhost","root","","dysam_controlled-calls");
 
 class MysqliDb
 {
