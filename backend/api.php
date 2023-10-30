@@ -65,20 +65,6 @@ if (isset($_POST["action"]) || isset($_GET["action"])) {
                 $mysqli->close();
             }
             break;
-        case "loadfactdata":
-            $numero = $_POST["numero"];
-
-            // Realizar una consulta para obtener los datos correspondientes al número de factura
-            $facturaData = $db->where("numero", $numero)->getOne("datos_formulario");
-
-            if ($facturaData) {
-                // Si se encuentra la factura, enviar los datos como respuesta
-                echo json_encode(["salida" => "Éxito", "datos" => $facturaData]);
-            } else {
-                // Si no se encuentra la factura, mostrar un mensaje de error
-                echo json_encode(["salida" => "Error", "mensaje" => "La factura no se encontró en la base de datos."]);
-            }
-            break;
     }
     exit;
 }

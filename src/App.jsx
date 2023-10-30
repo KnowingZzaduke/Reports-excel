@@ -22,27 +22,13 @@ function App() {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [showClient, setShowClient] = useState(false);
   const [data, setData] = useState(null);
-  const [selectedValue, setSelectedValue] = useState(new Set([]));
   const [showForm, setShowForm] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [infoModal, setInfoModal] = useState(null);
-  const [nowDate, setNowDate] = useState("");
-  const [showNumber, setShowNumber] = useState(false);
-  const [selectedNumber, setSelectedNumber] = useState(new Set([]));
-  const [showErrorFactNumber, setShowErrorFactNumer] = useState(false);
   const [showErrorNotNumber, setShowErrorNotNumber] = useState(false);
   const [showNotResultsNumber, setShowNotResultsNumber] = useState(false);
-  const [params, setParams] = useState({
-    nombreCliente: "",
-    tiempoActual: null,
-    numero: null,
-    fecha: "",
-    saldoPendiente: null,
-    fechaVencida: null,
-    comentario: "",
-  });
   const [sendParams, setSendParams] = useState({
-    nombreCliente: params.nombreCliente,
+    nombreCliente: null,
     tiempoActual: null,
     numero: null,
     fecha: "",
@@ -77,10 +63,6 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    getNowDate();
-  }, []);
-
   function handleSubmitFactNumber() {
     setShowNotResultsNumber(false);
     setShowErrorNotNumber(false);
@@ -90,7 +72,6 @@ function App() {
           (item) => item.Numero === sendParams.numero
         );
         if (filterData.length !== 0) {
-          console.log(filterData);
           filterData.forEach((item) => {
             setSendParams(() => ({
               ...sendParams,
@@ -109,13 +90,12 @@ function App() {
       }
     } else {
       setShowErrorNotNumber(true);
-      console.log("modal");
     }
   }
 
   useEffect(() => {
-    console.log(sendParams);
-  }, [sendParams]);
+    getNowDate();
+  }, [sendParams.numero]);
 
   useEffect(() => {
     if (showNotResultsNumber === true) {
@@ -152,20 +132,22 @@ function App() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    for (let i = 0; i < sendParams.length; i++) {
-      if (sendParams.length[i] === null) {
-        console.log("Uno de los datos ingresados en nulo");
-      } else {
-        try {
-          const response = await request.savedata(sendParams);
-          if (response) {
-            setInfoModal(response.data);
-            onOpen();
-          }
-        } catch (error) {
-          alert(error);
-        }
+    for (let key in sendParams) {
+      if (sendParams[key] === null) {
+        alert(`El valor ${key} es nulo`);
+        return;
       }
+    }
+    try {
+      const response = await request.savedata(sendParams);
+      if (response) {
+        setInfoModal(response.data);
+        onOpen();
+        setSendParams({ ...sendParams, comentario: "" });
+        setShowForm(false);
+      }
+    } catch (error) {
+      alert(error);
     }
   }
 
@@ -254,16 +236,18 @@ function App() {
                   className="w-full py-3"
                   value={sendParams.nombreCliente}
                   onChange={() => setSendParams(sendParams.nombreCliente)}
+                  disabled
                 />
               </div>
               <div>
                 <Input
                   type="text"
-                  label="Fecha y hora"
+                  label="Fecha y hora de la llamada"
                   color="primary"
                   className="w-full py-3"
                   value={sendParams.tiempoActual}
                   onChange={() => setSendParams(sendParams.tiempoActual)}
+                  disabled
                 />
               </div>
               <div>
@@ -274,6 +258,7 @@ function App() {
                   className="w-full py-3"
                   value={sendParams.fecha}
                   onChange={() => setSendParams(sendParams.fecha)}
+                  disabled
                 />
               </div>
               <div>
@@ -284,6 +269,7 @@ function App() {
                   className="w-full py-3"
                   value={sendParams.saldoPendiente}
                   onChange={() => setSendParams(sendParams.saldoPendiente)}
+                  disabled
                 />
               </div>
               <div>
@@ -294,6 +280,7 @@ function App() {
                   className="w-full py-3"
                   value={sendParams.fechaVencida}
                   onChange={() => setSendParams(sendParams.fechaVencida)}
+                  disabled
                 />
               </div>
               <Textarea
