@@ -29,6 +29,9 @@ function App() {
   const [nowDate, setNowDate] = useState("");
   const [showNumber, setShowNumber] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState(new Set([]));
+  const [showErrorFactNumber, setShowErrorFactNumer] = useState(false);
+  const [showErrorNotNumber, setShowErrorNotNumber] = useState(false);
+  const [showNotResultsNumber, setShowNotResultsNumber] = useState(false);
   const [params, setParams] = useState({
     nombreCliente: "",
     tiempoActual: null,
@@ -66,82 +69,73 @@ function App() {
         let jsonData = XLSX.utils.sheet_to_json(sheet);
 
         if (jsonData) {
-          console.log(jsonData);
-          const uniqueClientData = {}; // Objeto para almacenar los datos únicos de clientes
-
-          jsonData.forEach((record) => {
-            const nombreCliente = record.NombreCliente;
-            if (!uniqueClientData[nombreCliente]) {
-              uniqueClientData[nombreCliente] = {
-                NombreCliente: new Set(),
-                Numero: new Set(),
-                Fechas: new Set(), // Usamos un Set para mantener fechas únicas por cliente
-                SaldoPendiente: new Set(),
-                DiasVencimiento: new Set(),
-                Llamar: record.Llamar,
-              };
-            }
-            if (record.Llamar === "Por llamar") {
-              uniqueClientData[nombreCliente].NombreCliente.add(nombreCliente);
-              uniqueClientData[nombreCliente].Numero.add(record.Numero);
-              uniqueClientData[nombreCliente].Fechas.add(record.Fecha); // Agregar la fecha al conjunto para mantenerla única
-              uniqueClientData[nombreCliente].SaldoPendiente.add(
-                record.SaldoPendiente
-              );
-              uniqueClientData[nombreCliente].DiasVencimiento.add(
-                record.DiasVencimiento
-              );
-              // Convierte el objeto de datos únicos en un array para establecerlo en `setData`
-              const uniqueData = Object.values(uniqueClientData);
-              if (uniqueData) {
-                const finallyData = uniqueData.map((item) => {
-                  const nombreCliente = Array.from(item.NombreCliente);
-                  const fechasCliente = Array.from(item.Fechas);
-                  const numeroCliente = Array.from(item.Numero);
-                  const saldoPendiente = Array.from(item.SaldoPendiente);
-                  const diasVencidos = Array.from(item.DiasVencimiento);
-                  return {
-                    ...item,
-                    NombreCliente: nombreCliente,
-                    Numero: numeroCliente,
-                    Fechas: fechasCliente,
-                    SaldoPendiente: saldoPendiente,
-                    DiasVencimiento: diasVencidos,
-                  };
-                });
-                if (finallyData) {
-                  setData(finallyData);
-                }
-              }
-            }
-          });
+          setData(jsonData);
         }
       };
       setShowClient(true);
       reader.readAsArrayBuffer(file);
     }
   }
+
   useEffect(() => {
-    if (data && selectedValue) {
-      console.log(data);
-      setSendParams((prevData) => ({
-        ...prevData,
-        nombreCliente: selectedValue,
-      }));
-      const filterData = data.filter((item) => {
-        return item.NombreCliente.some((nombre) => selectedValue.has(nombre));
-      });
-      if (filterData.length > 0) {
-        filterData.map((item) => {
-          setParams((prevParams) => ({
-            ...prevParams,
-            numero: item.Numero,
-          }));
-        });
+    getNowDate();
+  }, []);
+
+  function handleSubmitFactNumber() {
+    setShowNotResultsNumber(false);
+    setShowErrorNotNumber(false);
+    if (sendParams.numero !== "" && sendParams.numero !== null) {
+      if (data !== null) {
+        const filterData = data.filter(
+          (item) => item.Numero === sendParams.numero
+        );
+        if (filterData.length !== 0) {
+          console.log(filterData);
+          filterData.forEach((item) => {
+            setSendParams(() => ({
+              ...sendParams,
+              nombreCliente: item.NombreCliente,
+              numero: item.Numero,
+              fecha: item.Fecha,
+              saldoPendiente: item.SaldoPendiente,
+              fechaVencida: item.DiasVencimiento,
+              comentario: sendParams.comentario,
+            }));
+          });
+          setShowForm(true);
+        } else {
+          setShowNotResultsNumber(true);
+        }
       }
-      getNowDate();
+    } else {
+      setShowErrorNotNumber(true);
+      console.log("modal");
     }
-  }, [selectedValue]);
+  }
+
+  useEffect(() => {
+    console.log(sendParams);
+  }, [sendParams]);
+
+  useEffect(() => {
+    if (showNotResultsNumber === true) {
+      onOpen();
+      setTimeout(() => {
+        onClose();
+        setShowNotResultsNumber(false);
+      }, 2000);
+    }
+  }, [showNotResultsNumber]);
+
+  useEffect(() => {
+    if (showErrorNotNumber === true) {
+      onOpen();
+      setTimeout(() => {
+        onClose();
+        setShowErrorNotNumber(false);
+      }, 2000);
+    }
+  }, [showErrorNotNumber]);
 
   function getNowDate() {
     let fechaActualUTC = new Date();
@@ -158,38 +152,22 @@ function App() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (sendParams.comentario !== "") {
-      try {
-        const response = await request.savedata(sendParams);
-        if (response) {
-          setInfoModal(response.data);
-          onOpen();
+    for (let i = 0; i < sendParams.length; i++) {
+      if (sendParams.length[i] === null) {
+        console.log("Uno de los datos ingresados en nulo");
+      } else {
+        try {
+          const response = await request.savedata(sendParams);
+          if (response) {
+            setInfoModal(response.data);
+            onOpen();
+          }
+        } catch (error) {
+          alert(error);
         }
-      } catch (error) {
-        alert(error);
       }
     }
   }
-
-  useEffect(() => {
-    if (data && sendParams.numero) {
-      console.log(sendParams.numero.values().next().value.toString());
-      const filterDataNumber = data.find((item) =>
-        item.Numero.includes(sendParams.numero.values().next().value.toString())
-      );
-      console.log(filterDataNumber);
-      if (filterDataNumber) {
-        setParams({
-          nombreCliente: filterDataNumber.NombreCliente,
-          numero: filterDataNumber.Numero,
-          tiempoActual: nowDate,
-          fecha: filterDataNumber.Fechas,
-          saldoPendiente: filterDataNumber.SaldoPendiente,
-          fechaVencida: filterDataNumber.DiasVencimiento,
-        });
-      }
-    }
-  }, [sendParams.numero]);
 
   return (
     <div
@@ -233,7 +211,7 @@ function App() {
               />
             </div>
           </div>
-          <form
+          <div
             className={showClient === true ? "showClient" : "notShowClient"}
             style={{ backgroundColor: "#CACFD2", margin: "10px" }}
           >
@@ -244,14 +222,24 @@ function App() {
                 color="primary"
                 isRequired
                 className="w-full py-3"
+                value={sendParams.numero}
+                onChange={(e) =>
+                  setSendParams({ ...sendParams, numero: e.target.value })
+                }
               />
             </div>
             <div className="p-4">
-              <Button color="warning" className="w-full" radius="full">
+              <Button
+                color="warning"
+                className="w-full"
+                radius="full"
+                type="button"
+                onClick={handleSubmitFactNumber}
+              >
                 Buscar número de factura
               </Button>
             </div>
-          </form>
+          </div>
 
           <div
             className={showForm === true ? "showForm" : "notShowForm"}
@@ -259,29 +247,14 @@ function App() {
           >
             <form onSubmit={handleSubmit}>
               <div>
-                <Select
-                  isRequired
+                <Input
+                  type="text"
+                  label="Nombre del cliente"
                   color="primary"
-                  label="Cliente"
-                  placeholder="Seleccionar un cliente"
-                  className="w-full py-2"
-                  selectedKeys={selectedValue}
-                  onSelectionChange={setSelectedValue}
-                >
-                  {data &&
-                    data.map((item, index) =>
-                      item.NombreCliente.map((nombre, index) => (
-                        <SelectItem
-                          key={nombre}
-                          value={nombre}
-                          className="text-black"
-                          onClick={() => setShowNumber(true)}
-                        >
-                          {nombre}
-                        </SelectItem>
-                      ))
-                    )}
-                </Select>
+                  className="w-full py-3"
+                  value={sendParams.nombreCliente}
+                  onChange={() => setSendParams(sendParams.nombreCliente)}
+                />
               </div>
               <div>
                 <Input
@@ -290,85 +263,38 @@ function App() {
                   color="primary"
                   className="w-full py-3"
                   value={sendParams.tiempoActual}
-                  onChange={(newSelection) =>
-                    setSendParams({ ...sendParams, fecha: newSelection })
-                  }
+                  onChange={() => setSendParams(sendParams.tiempoActual)}
                 />
               </div>
               <div>
-                <Select
-                  isRequired
+                <Input
+                  type="text"
+                  label="Fecha"
                   color="primary"
-                  label="Fechas"
-                  placeholder="Seleccionar fecha"
-                  className="w-full py-2"
-                  selectedValue={sendParams.fecha}
-                  onSelectionChange={(newSelection) =>
-                    setSendParams({ ...sendParams, fecha: newSelection })
-                  }
-                >
-                  {params.fecha &&
-                    params.fecha.map((fecha, index) => (
-                      <SelectItem
-                        key={fecha}
-                        value={fecha}
-                        className="text-black"
-                      >
-                        {fecha}
-                      </SelectItem>
-                    ))}
-                </Select>
+                  className="w-full py-3"
+                  value={sendParams.fecha}
+                  onChange={() => setSendParams(sendParams.fecha)}
+                />
               </div>
               <div>
-                <Select
-                  isRequired
+                <Input
+                  type="text"
+                  label="Saldo pendiente"
                   color="primary"
-                  label="Saldo/s pendiente/s"
-                  placeholder="Seleccionar saldo pendiente"
-                  className="w-full py-2"
-                  selectedValue={sendParams.saldoPendiente}
-                  onSelectionChange={(newSelection) =>
-                    setSendParams({
-                      ...sendParams,
-                      saldoPendiente: newSelection,
-                    })
-                  }
-                >
-                  {params.saldoPendiente &&
-                    params.saldoPendiente.map((saldo, index) => (
-                      <SelectItem
-                        key={saldo}
-                        value={saldo}
-                        className="text-black"
-                      >
-                        {saldo}
-                      </SelectItem>
-                    ))}
-                </Select>
+                  className="w-full py-3"
+                  value={sendParams.saldoPendiente}
+                  onChange={() => setSendParams(sendParams.saldoPendiente)}
+                />
               </div>
               <div>
-                <Select
-                  isRequired
+                <Input
+                  type="text"
+                  label="Días de vencimiento"
                   color="primary"
-                  label="Dias Vencimiento"
-                  placeholder="Dias Vencimiento"
-                  className="w-full py-2"
-                  selectedValue={sendParams.fechaVencida}
-                  onSelectionChange={(newSelection) =>
-                    setSendParams({ ...sendParams, fechaVencida: newSelection })
-                  }
-                >
-                  {params.fechaVencida &&
-                    params.fechaVencida.map((dias, index) => (
-                      <SelectItem
-                        key={dias}
-                        value={dias}
-                        className="text-black"
-                      >
-                        {dias}
-                      </SelectItem>
-                    ))}
-                </Select>
+                  className="w-full py-3"
+                  value={sendParams.fechaVencida}
+                  onChange={() => setSendParams(sendParams.fechaVencida)}
+                />
               </div>
               <Textarea
                 label="Comentario"
@@ -416,6 +342,39 @@ function App() {
                 </ModalFooter>
               </>
             )}
+          </ModalContent>
+        </Modal>
+      )}
+
+      {showErrorNotNumber && (
+        <Modal backdrop="blur" isOpen={isOpen} onClose={onClose}>
+          <ModalContent>
+            <>
+              <ModalHeader className="flex flex-col gap-1 text-black">
+                Error!
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-black py-3">
+                  Por favor ingresa un número de factura válido
+                </p>
+              </ModalBody>
+            </>
+          </ModalContent>
+        </Modal>
+      )}
+      {showNotResultsNumber && (
+        <Modal backdrop="blur" isOpen={isOpen} onClose={onClose}>
+          <ModalContent>
+            <>
+              <ModalHeader className="flex flex-col gap-1 text-black">
+                Error!
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-black py-2">
+                  El número de factura ingresado no fue encontrado
+                </p>
+              </ModalBody>
+            </>
           </ModalContent>
         </Modal>
       )}
