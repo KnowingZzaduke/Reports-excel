@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   Input,
-  Select,
-  SelectItem,
   Textarea,
   Button,
   Modal,
@@ -66,11 +64,10 @@ function App() {
   function handleSubmitFactNumber() {
     setShowNotResultsNumber(false);
     setShowErrorNotNumber(false);
-    if (sendParams.numero !== "" && sendParams.numero !== null) {
-      if (data !== null) {
-        const filterData = data.filter(
-          (item) => item.Numero === sendParams.numero
-        );
+    if (sendParams.numero !== null && data !== null) {
+      const parsetNumber = parseInt(sendParams.numero);
+      if (typeof parsetNumber === "number" && !isNaN(parsetNumber)) {
+        const filterData = data.filter((item) => parseInt(item.Numero) === parsetNumber);
         if (filterData.length !== 0) {
           filterData.forEach((item) => {
             setSendParams(() => ({
@@ -164,7 +161,12 @@ function App() {
           loop
           playsInline
           className="absolute t-0 l-0 w-100"
-          style={{ objectFit: "cover", zIndex: "-1", height: "100%" }}
+          style={{
+            objectFit: "cover",
+            zIndex: "-1",
+            height: "100%",
+            width: "100%",
+          }}
         />
       ) : (
         <img

@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
-import DataTable from "./routes/table.jsx";
+import DataTable from "./routes/Table.jsx";
 import { NextUIProvider } from "@nextui-org/react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
@@ -11,7 +11,7 @@ const router = createBrowserRouter([
     element: <App />,
   },
   {
-    path: "Tabla-registro-de-llamadas",
+    path: "/registros",
     element: <DataTable />,
   },
 ]);

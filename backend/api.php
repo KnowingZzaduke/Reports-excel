@@ -12,8 +12,15 @@ if (isset($_POST["action"]) || isset($_GET["action"])) {
             $existingData = $db->where("numero", $numero)->getOne("datos_formulario");
 
             if ($existingData) {
-                // Si se encuentra un registro existente con el mismo número, mostrar un mensaje de error
-                echo json_encode(["salida" => "Error!", "mensaje" => "El número ya existe en la base de datos."]);
+                $comentario = $_POST["comentario"];
+                $data = array(
+                    "comentario" => $comentario
+                );
+                if ($db->where("numero", $numero)->update("datos_formulario", $data)) {
+                    echo json_encode(["salida" => "Éxito", "mensaje" => "El comentario fue actualizado correctamente."]);
+                } else {
+                    echo json_encode(["salida" => "Error!", "mensaje" => "No se pudo actualizar el comentario en la base de datos"]);
+                }
             } else {
                 $cliente = $_POST["cliente"];
                 $tiempoActual = $_POST["tiempoActual"];
@@ -40,6 +47,7 @@ if (isset($_POST["action"]) || isset($_GET["action"])) {
                 }
             }
             break;
+
         case "loaddata":
             $mysqli = new mysqli("localhost", "root", "", "dysam_controlled-calls");
 
